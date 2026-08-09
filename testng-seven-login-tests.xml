@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="SevenLoginTestsSuite" verbose="2" thread-count="1" parallel="false">
+    <listeners>
+        <listener class-name="com.crm.automation.listeners.ExtentReportListener"/>
+    </listeners>
+    <test name="Login Tests Subset">
+        <classes>
+            <class name="com.crm.automation.tests.LoginTests">
+                <methods>
+                    <include name="testLoginPageElements"/>
+                    <include name="testSuccessfulLogin"/>
+                    <include name="testLoginWithInvalidUsername"/>
+                    <include name="testLoginWithInvalidPassword"/>
+                    <include name="testLoginWithEmptyCredentials"/>
+                    <include name="testLoginWithEmptyUsername"/>
+                    <include name="testLoginWithEmptyPassword"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+</suite>

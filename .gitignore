@@ -1,0 +1,193 @@
+# IDE and Editor Files
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+*.iml
+*.iws
+*.ipr
+.DS_Store
+*.class
+*.classpath
+*.project
+.settings/
+
+# Build and Compilation
+target/
+build/
+.gradle/
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Test Related
+.pytest_cache/
+*.log
+logs/
+reports/
+screenshots/
+test-output/
+.testng/
+
+# Dependency Related
+node_modules/
+npm-debug.log
+package-lock.json
+*.lock
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+env.properties
+
+# OS Files
+Thumbs.db
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# IDE Plugins
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Temporary Files
+*.tmp
+*.temp
+*.bak
+*~
+.~*
+
+# Maven
+pom.xml.backup
+pom.xml.versionsBackup
+pom.xml.atomic
+
+# Gradle
+.gradle
+.gradletasknamecache
+
+# SonarQube
+.sonarqube/
+
+# Coverage Reports
+coverage/
+*.coverage
+.coverage
+htmlcov/
+
+# IntelliJ
+*.iml
+*.iws
+*.ipr
+out/
+.idea
+
+# NetBeans
+nbproject/private/
+
+# Visual Studio Code
+.vscode/
+.history/
+
+# Spring Boot
+spring-boot-debug.log
+*.jks
+*.p12
+*.pfx
+
+# Security
+*.pem
+*.key
+*.crt
+*.p7b
+*.p7c
+
+# Credentials (IMPORTANT!)
+config.properties.local
+credentials.json
+*.credentials
+.aws/
+.ssh/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+*.mdb
+
+# Logs
+*.log
+logs/
+debug.log
+
+# Reports
+reports/
+test-reports/
+coverage-reports/
+extend-reports/
+
+# Screenshots
+screenshots/
+screnshots/
+
+# Archives
+*.zip
+*.rar
+*.7z
+*.tar
+*.tar.gz
+
+# Documentation Generated Files
+site/
+docs/generated/
+docs/build/
+
+# Node (if used with frontend)
+node_modules/
+dist/
+build/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.Python
+venv/
+env/
+
+# Docker
+.docker/
+*.dockerfile
+
+# Git
+.gitattributes
+.gitconfig
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# Package Manager Cache
+.npm/
+.cache/
+.v/
+
+# OS Specific
+.Thumbs.db
+.DS_Store
+
+# Project Specific
+/allure-results/
+/allure-report/
+/test-results/

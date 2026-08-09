@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="warn">
+    <Properties>
+        <Property name="basePath">./logs</Property>
+        <Property name="filename">crm-automation</Property>
+    </Properties>
+
+    <Appenders>
+        <!-- Console Appender -->
+        <Console name="ConsoleAppender" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%-5p] [%c{1}] - %m%n" />
+        </Console>
+
+        <!-- File Appender -->
+        <File name="FileAppender" fileName="${basePath}/${filename}.log">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%-5p] [%c{1}] - %m%n" />
+        </File>
+    </Appenders>
+
+    <Loggers>
+        <!-- Root Logger -->
+        <Root level="info">
+            <AppenderRef ref="ConsoleAppender" />
+            <AppenderRef ref="FileAppender" />
+        </Root>
+
+        <!-- Selenium Logger -->
+        <Logger name="org.openqa.selenium" level="warn" />
+    </Loggers>
+</Configuration>

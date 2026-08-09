@@ -1,0 +1,8 @@
+TC_ID,Scenario Type,Test Case Title,Expected Result,Priority
+TC-01,Positive,User logs in with valid credentials,User is redirected to the dashboard after successful login,High
+TC-02,Positive,User can view the dashboard after successful login,Dashboard loads successfully with navigation visible,High
+TC-03,Negative,User cannot login with invalid username,Login fails and an error message is displayed,High
+TC-04,Negative,User cannot login with invalid password,Login fails and the user remains on the login page,High
+TC-05,Negative,User cannot login with empty username,Login is blocked and validation message is shown,Medium
+TC-06,Negative,User cannot login with empty password,Login is blocked and validation message is shown,Medium
+3. Click Sign in","Login is blocked and validation message is shown",Medium,Ready

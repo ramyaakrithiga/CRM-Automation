@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="CRM Automation Test Suite" verbose="2" thread-count="1" parallel="false">
+    <listeners>
+        <listener class-name="com.crm.automation.listeners.ExtentReportListener"/>
+    </listeners>
+
+    <!-- Login Tests -->
+    <test name="Login Tests">
+        <classes>
+            <class name="com.crm.automation.tests.LoginTests">
+                <methods>
+                    <include name="testLoginPageElements"/>
+                    <include name="testSuccessfulLogin"/>
+                    <include name="testLoginWithInvalidUsername"/>
+                    <include name="testLoginWithInvalidPassword"/>
+                    <include name="testLoginWithEmptyCredentials"/>
+                    <include name="testLoginWithEmptyUsername"/>
+                    <include name="testLoginWithEmptyPassword"/>
+                    <include name="testLoginPageURL"/>
+                    <include name="testUsernameFieldInput"/>
+                    <include name="testPasswordFieldInput"/>
+                    <include name="testClearInputFields"/>
+                    <include name="testRememberMeCheckbox"/>
+                    <include name="testForgotPasswordLinkVisibility"/>
+                    <include name="testLoginPageTitle"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+    <!-- Quick Login Test -->
+    <test name="Quick Login Test">
+        <classes>
+            <class name="com.crm.automation.tests.QuickLoginTest"/>
+        </classes>
+    </test>
+
+    <!-- Dashboard Tests -->
+    <test name="Dashboard Tests">
+        <classes>
+            <class name="com.crm.automation.tests.DashboardTests">
+                <methods>
+                    <include name="testDashboardPageLoads"/>
+                    <include name="testDashboardElements"/>
+                    <include name="testDashboardTitle"/>
+                    <include name="testDashboardURL"/>
+                    <include name="testPageTitle"/>
+                    <include name="testUserGreeting"/>
+                    <include name="testNavigationBar"/>
+                    <include name="testDashboardLoadTime"/>
+                    <include name="testNavigateBackToDashboard"/>
+                    <include name="testRefreshDashboard"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+</suite>
