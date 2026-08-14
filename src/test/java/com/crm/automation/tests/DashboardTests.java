@@ -84,7 +84,7 @@ public class DashboardTests extends BaseTest {
         Assert.assertNotNull(currentUrl, "Current URL is null");
         Assert.assertFalse(currentUrl.contains("login"), "Should not be on login page");
         
-        logger.info("Dashboard URL: " + currentUrl);
+        logger.info("Dashboard URL is: " + currentUrl);
     }
 
     /**
