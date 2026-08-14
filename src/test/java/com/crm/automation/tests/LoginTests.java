@@ -66,7 +66,7 @@ public class LoginTests extends BaseTest {
                 }
             }
         } catch (Exception e) {
-            logger.info("No password save popup detected");
+            logger.info("No password save popup detected in login screen");
         }
     }
 
