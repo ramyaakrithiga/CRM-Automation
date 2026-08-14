@@ -43,7 +43,7 @@ public class DashboardTests extends BaseTest {
         logger.info("Test: Verify Dashboard Page Loads");
         
         Assert.assertTrue(dashboardPage.isDashboardPageLoaded(), "Dashboard page did not load");
-        logger.info("Dashboard page loaded successfully");
+        logger.info("Dashboard page loaded successfully without issues");
     }
 
     /**
