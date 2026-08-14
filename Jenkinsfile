@@ -1,5 +1,3 @@
-#!/usr/bin/env groovy
-
 /**
  * Jenkins Pipeline for CRM Automation Testing
  * This pipeline orchestrates the build, test, and reporting stages
@@ -12,7 +10,6 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timeout(time: 1, unit: 'HOURS')
         timestamps()
-        ansiColor('xterm')
     }
 
     parameters {
@@ -42,18 +39,18 @@ pipeline {
         // Build Information
         BUILD_NAME = "CRM-Automation-${BUILD_NUMBER}"
         WORKSPACE_PATH = "${WORKSPACE}"
-        
+
         // Test Configuration
         BROWSER = "${params.BROWSER}"
         ENVIRONMENT = "${params.ENVIRONMENT}"
         HEADLESS = "${params.HEADLESS}"
         THREAD_COUNT = "${params.THREAD_COUNT}"
-        
+
         // Paths
         REPORTS_DIR = "${WORKSPACE}/reports"
         LOGS_DIR = "${WORKSPACE}/logs"
         SCREENSHOTS_DIR = "${WORKSPACE}/screenshots"
-        
+
         // Java Configuration
         JAVA_HOME = "/usr/lib/jvm/java-11-openjdk"
         PATH = "${JAVA_HOME}/bin:${PATH}"
@@ -98,7 +95,7 @@ pipeline {
                         mkdir -p ${REPORTS_DIR}
                         mkdir -p ${LOGS_DIR}
                         mkdir -p ${SCREENSHOTS_DIR}
-                        
+
                         # Display configuration
                         echo "Test Configuration:"
                         echo "  Browser: ${BROWSER}"
@@ -142,7 +139,7 @@ pipeline {
                             echo "Report files generated:"
                             ls -lh ${REPORTS_DIR}/*.html 2>/dev/null || echo "No HTML reports found"
                         fi
-                        
+
                         # Generate report summary
                         echo ""
                         echo "Test Summary:"
@@ -159,7 +156,7 @@ pipeline {
             steps {
                 script {
                     echo "====== Publishing test reports ======"
-                    
+
                     // Publish HTML reports
                     publishHTML([
                         allowMissing: false,
@@ -169,7 +166,7 @@ pipeline {
                         reportFiles: "*.html",
                         reportName: "Extent Report"
                     ])
-                    
+
                     echo "✓ Reports published"
                 }
             }
@@ -179,30 +176,27 @@ pipeline {
             steps {
                 script {
                     echo "====== Archiving test artifacts ======"
-                    
+
                     // Archive reports, logs, and screenshots
                     archiveArtifacts(
                         artifacts: 'reports/**/*.html, logs/**/*.log, screenshots/**/*.png',
                         allowEmptyArchive: true,
                         onlyIfSuccessful: false
                     )
-                    
+
                     // Archive test results
                     junit 'target/surefire-reports/*.xml'
-                    
+
                     echo "✓ Artifacts archived"
                 }
             }
         }
 
         stage('Notify Results') {
-            when {
-                always()
-            }
             steps {
                 script {
                     echo "====== Sending notifications ======"
-                    
+
                     def buildStatus = currentBuild.result ?: 'SUCCESS'
                     def buildMessage = """
                         Build: ${BUILD_NAME}
@@ -212,7 +206,7 @@ pipeline {
                         Environment: ${ENVIRONMENT}
                         URL: ${BUILD_URL}
                     """
-                    
+
                     // Email notification
                     emailext(
                         to: '${DEFAULT_RECIPIENTS}',
@@ -220,7 +214,7 @@ pipeline {
                         body: buildMessage,
                         attachmentsPattern: '${REPORTS_DIR}/*.html'
                     )
-                    
+
                     echo "✓ Notifications sent"
                 }
             }
@@ -268,7 +262,7 @@ pipeline {
 
 /**
  * Pipeline Description:
- * 
+ *
  * 1. CHECKOUT: Clones the repository
  * 2. BUILD: Compiles the project with Maven
  * 3. PRE-TEST SETUP: Creates necessary directories and configurations
@@ -277,7 +271,7 @@ pipeline {
  * 6. PUBLISH REPORTS: Publishes reports to Jenkins dashboard
  * 7. ARCHIVE ARTIFACTS: Archives reports, logs, and screenshots
  * 8. NOTIFY RESULTS: Sends email notifications with results
- * 
+ *
  * Parameters:
  * - BROWSER: Browser selection (chrome, firefox, edge)
  * - ENVIRONMENT: Target environment (dev, staging, production)
