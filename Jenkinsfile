@@ -111,9 +111,18 @@ pipeline {
                 alwaysLinkToLastBuild: true,
                 keepAll: true,
                 reportDir: "${env.REPORTS_DIR}/per_test",
-                reportFiles: "*.html",
+                reportFiles: "**/*.html",
                 reportName: "Per-test Reports"
             ])
+            // Debug: list per-test reports so console shows whether files exist
+            bat '''
+                echo Listing per-test reports directory
+                if exist "reports\\per_test" (
+                    dir "reports\\per_test" /B
+                ) else (
+                    echo reports\\per_test not found
+                )
+            '''
 
             // 2. Publish JUnit / TestNG XML Results from surefire-reports
             junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
