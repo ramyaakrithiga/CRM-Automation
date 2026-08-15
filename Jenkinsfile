@@ -79,12 +79,34 @@ pipeline {
                         -Dheadless=${params.HEADLESS} ^
                         -DthreadCount=${params.THREAD_COUNT}
 
+                    REM Debug: list surefire-reports to verify XMLs exist
+                    echo Listing target\surefire-reports
+                    if exist target\\surefire-reports (
+                        dir target\\surefire-reports /B
+                    ) else (
+                        echo target\\surefire-reports not found
+                    )
+
+                    echo Listing target\surefire-reports\junitreports
+                    if exist target\\surefire-reports\\junitreports (
+                        dir target\\surefire-reports\\junitreports /B
+                    ) else (
+                        echo target\\surefire-reports\\junitreports not found
+                    )
+
+                    REM Show if Python is available
+                    echo Checking for Python
+                    where python || echo Python not found
+
                     REM Generate per-test HTML reports from surefire junit XMLs (requires Python on agent)
                     if exist target\\surefire-reports\\junitreports (
                         if not exist "reports\\per_test" mkdir "reports\\per_test"
                         for %%f in (target\\surefire-reports\\junitreports\\*.xml) do (
-                            python "scripts\\generate_per_test_reports.py" -i "%%f" -o "reports\\per_test"
+                            echo Running per-test generator for %%f
+                            python "scripts\\generate_per_test_reports.py" -i "%%f" -o "reports\\per_test" || echo Failed to run generator for %%f
                         )
+                    ) else (
+                        echo Skipping per-test generation: no junitreports found
                     )
                 """
             }
