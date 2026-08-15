@@ -1,6 +1,6 @@
 /**
  * Jenkins Pipeline for CRM Automation Testing
- * Formatted specifically for Windows Jenkins Nodes (using batch commands)
+ * Formatted specifically for Windows Jenkins Node (using batch commands)
  */
 
 pipeline {
