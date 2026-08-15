@@ -1,16 +1,10 @@
 /**
  * Jenkins Pipeline for CRM Automation Testing
- * Optimized for automated Git triggers and reporting resilience
+ * Formatted specifically for Windows Jenkins Nodes (using batch commands)
  */
 
 pipeline {
     agent any
-
-    tools {
-        // Configured in Manage Jenkins -> Global Tool Configuration
-        // Remove or adjust name to match your Jenkins JDK tool setup
-        jdk 'JDK11'
-    }
 
     options {
         buildDiscarder(logRotator(numToKeepStr: '10'))
@@ -27,17 +21,17 @@ pipeline {
         choice(
             name: 'ENVIRONMENT',
             choices: ['dev', 'staging', 'production'],
-            description: 'Select environment'
+            description: 'Select target environment'
         )
         booleanParam(
             name: 'HEADLESS',
-            defaultValue: true, // Set to true for headless automated runs on Git push
+            defaultValue: true, // Default to true so headless automated Git triggers run without GUI
             description: 'Run tests in headless mode'
         )
         string(
             name: 'THREAD_COUNT',
             defaultValue: '1',
-            description: 'Number of parallel threads'
+            description: 'Number of parallel execution threads'
         )
     }
 
@@ -60,28 +54,26 @@ pipeline {
         stage('Build & Setup') {
             steps {
                 echo "====== Setting up test environment ======"
-                sh '''
+                bat """
                     java -version
                     mvn -version
-
-                    # Create required workspace directories
-                    mkdir -p ${REPORTS_DIR} ${LOGS_DIR} ${SCREENSHOTS_DIR}
-
-                    # Compile test code skipping test execution
+                    if not exist "${env.REPORTS_DIR}" mkdir "${env.REPORTS_DIR}"
+                    if not exist "${env.LOGS_DIR}" mkdir "${env.LOGS_DIR}"
+                    if not exist "${env.SCREENSHOTS_DIR}" mkdir "${env.SCREENSHOTS_DIR}"
                     mvn clean compile -q
-                '''
+                """
             }
         }
 
         stage('Execute Tests') {
             steps {
                 echo "====== Running automation tests ======"
-                sh """
-                    mvn test \
-                        -Dbrowser=${params.BROWSER} \
-                        -Denvironment=${params.ENVIRONMENT} \
-                        -Dheadless=${params.HEADLESS} \
-                        -DthreadCount=${params.THREAD_COUNT} \
+                bat """
+                    mvn test ^
+                        -Dbrowser=${params.BROWSER} ^
+                        -Denvironment=${params.ENVIRONMENT} ^
+                        -Dheadless=${params.HEADLESS} ^
+                        -DthreadCount=${params.THREAD_COUNT} ^
                         -Dtest=com.crm.automation.tests.*
                 """
             }
@@ -90,7 +82,7 @@ pipeline {
 
     post {
         always {
-            echo "====== Publishing Reports & Archiving ======"
+            echo "====== Publishing Reports & Archiving Artifacts ======"
 
             // 1. Publish Extent HTML Reports
             publishHTML([
@@ -102,29 +94,29 @@ pipeline {
                 reportName: "Extent Report"
             ])
 
-            // 2. Publish JUnit XML Results
+            // 2. Publish JUnit / TestNG XML Results
             junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
 
-            // 3. Archive Artifacts
+            // 3. Archive Test Artifacts (Reports, Logs, Screenshots)
             archiveArtifacts artifacts: 'reports/**/*.html, logs/**/*.log, screenshots/**/*.png', 
                              allowEmptyArchive: true, 
                              onlyIfSuccessful: false
 
-            // 4. Send Email Notification
+            // 4. Send Email Notifications
             script {
                 def buildStatus = currentBuild.result ?: 'SUCCESS'
                 def buildMessage = """
-                    Build: ${BUILD_NAME}
+                    Build Name: ${env.BUILD_NAME}
                     Status: ${buildStatus}
                     Duration: ${currentBuild.durationString}
                     Browser: ${params.BROWSER}
                     Environment: ${params.ENVIRONMENT}
-                    URL: ${BUILD_URL}
+                    Jenkins URL: ${env.BUILD_URL}
                 """
 
                 emailext(
                     to: '${DEFAULT_RECIPIENTS}',
-                    subject: "Jenkins Build ${BUILD_NAME} - ${buildStatus}",
+                    subject: "Jenkins Build ${env.BUILD_NAME} - ${buildStatus}",
                     body: buildMessage,
                     attachmentsPattern: "${env.REPORTS_DIR}/*.html"
                 )
@@ -132,7 +124,7 @@ pipeline {
         }
 
         cleanup {
-            echo "====== Workspace Cleanup ======"
+            echo "====== Cleaning Workspace ======"
             deleteDir()
         }
     }
