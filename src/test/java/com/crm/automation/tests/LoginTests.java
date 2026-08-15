@@ -22,13 +22,14 @@ import com.crm.automation.utilities.CommonUtils;
 import com.crm.automation.utilities.DriverManager;
 
 /**
- * Login Test Case
+ * Login Test Cases
  */
 public class LoginTests extends BaseTest {
     private static final Logger logger = LogManager.getLogger(LoginTests.class);
     private LoginPage loginPage;
     private DashboardPage dashboardPage;
 
+    //before method
     @BeforeMethod(alwaysRun = true)
     public void resetBrowserState() {
         try {
