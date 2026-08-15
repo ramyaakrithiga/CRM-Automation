@@ -25,7 +25,7 @@ pipeline {
         )
         booleanParam(
             name: 'HEADLESS',
-            defaultValue: true, // Default to true so headless automated Git triggers run without GUI
+            defaultValue: true,
             description: 'Run tests in headless mode'
         )
         string(
@@ -69,12 +69,14 @@ pipeline {
             steps {
                 echo "====== Running automation tests ======"
                 bat """
+                    if not exist "${env.REPORTS_DIR}" mkdir "${env.REPORTS_DIR}"
+                    if not exist "${env.LOGS_DIR}" mkdir "${env.LOGS_DIR}"
+                    if not exist "${env.SCREENSHOTS_DIR}" mkdir "${env.SCREENSHOTS_DIR}"
                     mvn test ^
                         -Dbrowser=${params.BROWSER} ^
                         -Denvironment=${params.ENVIRONMENT} ^
                         -Dheadless=${params.HEADLESS} ^
-                        -DthreadCount=${params.THREAD_COUNT} ^
-                        -Dtest=com.crm.automation.tests.*
+                        -DthreadCount=${params.THREAD_COUNT}
                 """
             }
         }
@@ -84,7 +86,7 @@ pipeline {
         always {
             echo "====== Publishing Reports & Archiving Artifacts ======"
 
-            // 1. Publish Extent HTML Reports
+            // 1. Publish Extent / HTML Reports
             publishHTML([
                 allowMissing: true,
                 alwaysLinkToLastBuild: true,
@@ -94,7 +96,7 @@ pipeline {
                 reportName: "Extent Report"
             ])
 
-            // 2. Publish JUnit / TestNG XML Results
+            // 2. Publish JUnit / TestNG XML Results from surefire-reports
             junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
 
             // 3. Archive Test Artifacts (Reports, Logs, Screenshots)
@@ -102,7 +104,7 @@ pipeline {
                              allowEmptyArchive: true, 
                              onlyIfSuccessful: false
 
-            // 4. Send Email Notifications
+            // 4. Send Email Notifications (Optional)
             script {
                 def buildStatus = currentBuild.result ?: 'SUCCESS'
                 def buildMessage = """
