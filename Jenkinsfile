@@ -2,7 +2,7 @@
  * Jenkins Pipeline for CRM Automation Testing
  * Formatted specifically for Windows Jenkins Node (using batch commands)
  */
-
+//test trigger
 pipeline {
     agent any
 
