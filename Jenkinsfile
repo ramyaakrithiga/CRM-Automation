@@ -80,9 +80,9 @@ pipeline {
                         -DthreadCount=${params.THREAD_COUNT}
 
                     REM Generate per-test HTML reports from surefire junit XMLs (requires Python on agent)
-                    if exist target\surefire-reports\junitreports (
+                    if exist target\\surefire-reports\\junitreports (
                         if not exist "reports\\per_test" mkdir "reports\\per_test"
-                        for %%f in (target\surefire-reports\junitreports\*.xml) do (
+                        for %%f in (target\\surefire-reports\\junitreports\\*.xml) do (
                             python "scripts\\generate_per_test_reports.py" -i "%%f" -o "reports\\per_test"
                         )
                     )
