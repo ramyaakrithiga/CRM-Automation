@@ -1,6 +1,6 @@
 /**
  * Jenkins Pipeline for CRM Automation Testing
- * This pipeline orchestrates the build, test, and reporting stages
+ * Formatted specifically for Windows Jenkins Node (using batch commands)
  */
 
 pipeline {
@@ -21,260 +21,111 @@ pipeline {
         choice(
             name: 'ENVIRONMENT',
             choices: ['dev', 'staging', 'production'],
-            description: 'Select environment'
+            description: 'Select target environment'
         )
         booleanParam(
             name: 'HEADLESS',
-            defaultValue: false,
+            defaultValue: true, // Default to true so headless automated Git triggers run without GUI
             description: 'Run tests in headless mode'
         )
         string(
             name: 'THREAD_COUNT',
             defaultValue: '1',
-            description: 'Number of parallel threads'
+            description: 'Number of parallel execution threads'
         )
     }
 
     environment {
-        // Build Information
         BUILD_NAME = "CRM-Automation-${BUILD_NUMBER}"
-        WORKSPACE_PATH = "${WORKSPACE}"
-
-        // Test Configuration
-        BROWSER = "${params.BROWSER}"
-        ENVIRONMENT = "${params.ENVIRONMENT}"
-        HEADLESS = "${params.HEADLESS}"
-        THREAD_COUNT = "${params.THREAD_COUNT}"
-
-        // Paths
-        REPORTS_DIR = "${WORKSPACE}/reports"
-        LOGS_DIR = "${WORKSPACE}/logs"
-        SCREENSHOTS_DIR = "${WORKSPACE}/screenshots"
-
-        // Java Configuration
-        JAVA_HOME = "/usr/lib/jvm/java-11-openjdk"
-        PATH = "${JAVA_HOME}/bin:${PATH}"
+        REPORTS_DIR = "reports"
+        LOGS_DIR = "logs"
+        SCREENSHOTS_DIR = "screenshots"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                script {
-                    echo "====== Checking out source code ======"
-                    checkout scm
-                    echo "✓ Code checkout completed"
-                }
+                echo "====== Checking out source code ======"
+                checkout scm
+                echo "✓ Code checkout completed"
             }
         }
 
-        stage('Build') {
+        stage('Build & Setup') {
             steps {
-                script {
-                    echo "====== Building project ======"
-                    sh '''
-                        echo "Java Version:"
-                        java -version
-                        echo ""
-                        echo "Maven Version:"
-                        mvn -version
-                        echo ""
-                        echo "Building Maven project..."
-                        mvn clean install -DskipTests -q
-                    '''
-                    echo "✓ Build completed successfully"
-                }
-            }
-        }
-
-        stage('Pre-Test Setup') {
-            steps {
-                script {
-                    echo "====== Setting up test environment ======"
-                    sh '''
-                        # Create required directories
-                        mkdir -p ${REPORTS_DIR}
-                        mkdir -p ${LOGS_DIR}
-                        mkdir -p ${SCREENSHOTS_DIR}
-
-                        # Display configuration
-                        echo "Test Configuration:"
-                        echo "  Browser: ${BROWSER}"
-                        echo "  Environment: ${ENVIRONMENT}"
-                        echo "  Headless: ${HEADLESS}"
-                        echo "  Thread Count: ${THREAD_COUNT}"
-                        echo "  Reports Directory: ${REPORTS_DIR}"
-                        echo "  Logs Directory: ${LOGS_DIR}"
-                    '''
-                    echo "✓ Pre-test setup completed"
-                }
+                echo "====== Setting up test environment ======"
+                bat """
+                    java -version
+                    mvn -version
+                    if not exist "${env.REPORTS_DIR}" mkdir "${env.REPORTS_DIR}"
+                    if not exist "${env.LOGS_DIR}" mkdir "${env.LOGS_DIR}"
+                    if not exist "${env.SCREENSHOTS_DIR}" mkdir "${env.SCREENSHOTS_DIR}"
+                    mvn clean compile -q
+                """
             }
         }
 
         stage('Execute Tests') {
             steps {
-                script {
-                    echo "====== Running automation tests ======"
-                    sh '''
-                        # Run tests with Maven
-                        mvn clean test \
-                            -Dbrowser=${BROWSER} \
-                            -Denvironment=${ENVIRONMENT} \
-                            -Dheadless=${HEADLESS} \
-                            -DthreadCount=${THREAD_COUNT} \
-                            -Dtest=com.crm.automation.tests.* \
-                            || echo "Some tests failed - continuing with report generation"
-                    '''
-                    echo "✓ Test execution completed"
-                }
-            }
-        }
-
-        stage('Generate Reports') {
-            steps {
-                script {
-                    echo "====== Generating test reports ======"
-                    sh '''
-                        # List report files
-                        if [ -d "${REPORTS_DIR}" ]; then
-                            echo "Report files generated:"
-                            ls -lh ${REPORTS_DIR}/*.html 2>/dev/null || echo "No HTML reports found"
-                        fi
-
-                        # Generate report summary
-                        echo ""
-                        echo "Test Summary:"
-                        if [ -d "${LOGS_DIR}" ]; then
-                            tail -50 ${LOGS_DIR}/crm-automation.log 2>/dev/null || echo "Log file not found"
-                        fi
-                    '''
-                    echo "✓ Reports generated"
-                }
-            }
-        }
-
-        stage('Publish Reports') {
-            steps {
-                script {
-                    echo "====== Publishing test reports ======"
-
-                    // Publish HTML reports
-                    publishHTML([
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: "${REPORTS_DIR}",
-                        reportFiles: "*.html",
-                        reportName: "Extent Report"
-                    ])
-
-                    echo "✓ Reports published"
-                }
-            }
-        }
-
-        stage('Archive Artifacts') {
-            steps {
-                script {
-                    echo "====== Archiving test artifacts ======"
-
-                    // Archive reports, logs, and screenshots
-                    archiveArtifacts(
-                        artifacts: 'reports/**/*.html, logs/**/*.log, screenshots/**/*.png',
-                        allowEmptyArchive: true,
-                        onlyIfSuccessful: false
-                    )
-
-                    // Archive test results
-                    junit 'target/surefire-reports/*.xml'
-
-                    echo "✓ Artifacts archived"
-                }
-            }
-        }
-
-        stage('Notify Results') {
-            steps {
-                script {
-                    echo "====== Sending notifications ======"
-
-                    def buildStatus = currentBuild.result ?: 'SUCCESS'
-                    def buildMessage = """
-                        Build: ${BUILD_NAME}
-                        Status: ${buildStatus}
-                        Duration: ${currentBuild.durationString}
-                        Browser: ${BROWSER}
-                        Environment: ${ENVIRONMENT}
-                        URL: ${BUILD_URL}
-                    """
-
-                    // Email notification
-                    emailext(
-                        to: '${DEFAULT_RECIPIENTS}',
-                        subject: "Jenkins Build ${BUILD_NAME} - ${buildStatus}",
-                        body: buildMessage,
-                        attachmentsPattern: '${REPORTS_DIR}/*.html'
-                    )
-
-                    echo "✓ Notifications sent"
-                }
+                echo "====== Running automation tests ======"
+                bat """
+                    mvn test ^
+                        -Dbrowser=${params.BROWSER} ^
+                        -Denvironment=${params.ENVIRONMENT} ^
+                        -Dheadless=${params.HEADLESS} ^
+                        -DthreadCount=${params.THREAD_COUNT} ^
+                        -Dtest=com.crm.automation.tests.*
+                """
             }
         }
     }
 
     post {
         always {
+            echo "====== Publishing Reports & Archiving Artifacts ======"
+
+            // 1. Publish Extent HTML Reports
+            publishHTML([
+                allowMissing: true,
+                alwaysLinkToLastBuild: true,
+                keepAll: true,
+                reportDir: "${env.REPORTS_DIR}",
+                reportFiles: "*.html",
+                reportName: "Extent Report"
+            ])
+
+            // 2. Publish JUnit / TestNG XML Results
+            junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
+
+            // 3. Archive Test Artifacts (Reports, Logs, Screenshots)
+            archiveArtifacts artifacts: 'reports/**/*.html, logs/**/*.log, screenshots/**/*.png', 
+                             allowEmptyArchive: true, 
+                             onlyIfSuccessful: false
+
+            // 4. Send Email Notifications
             script {
-                echo "====== Pipeline Cleanup ======"
-                // Clean up temporary files if needed
-                cleanWs(
-                    deleteDirs: true,
-                    patterns: [[pattern: 'target/', type: 'INCLUDE']]
+                def buildStatus = currentBuild.result ?: 'SUCCESS'
+                def buildMessage = """
+                    Build Name: ${env.BUILD_NAME}
+                    Status: ${buildStatus}
+                    Duration: ${currentBuild.durationString}
+                    Browser: ${params.BROWSER}
+                    Environment: ${params.ENVIRONMENT}
+                    Jenkins URL: ${env.BUILD_URL}
+                """
+
+                emailext(
+                    to: '${DEFAULT_RECIPIENTS}',
+                    subject: "Jenkins Build ${env.BUILD_NAME} - ${buildStatus}",
+                    body: buildMessage,
+                    attachmentsPattern: "${env.REPORTS_DIR}/*.html"
                 )
             }
         }
 
-        success {
-            script {
-                echo "====== Build Successful ======"
-                currentBuild.result = 'SUCCESS'
-            }
-        }
-
-        failure {
-            script {
-                echo "====== Build Failed ======"
-                currentBuild.result = 'FAILURE'
-            }
-        }
-
-        unstable {
-            script {
-                echo "====== Build Unstable ======"
-                currentBuild.result = 'UNSTABLE'
-            }
-        }
-
         cleanup {
+            echo "====== Cleaning Workspace ======"
             deleteDir()
         }
     }
 }
-
-/**
- * Pipeline Description:
- *
- * 1. CHECKOUT: Clones the repository
- * 2. BUILD: Compiles the project with Maven
- * 3. PRE-TEST SETUP: Creates necessary directories and configurations
- * 4. EXECUTE TESTS: Runs automation tests with specified parameters
- * 5. GENERATE REPORTS: Creates Extent Reports and logs
- * 6. PUBLISH REPORTS: Publishes reports to Jenkins dashboard
- * 7. ARCHIVE ARTIFACTS: Archives reports, logs, and screenshots
- * 8. NOTIFY RESULTS: Sends email notifications with results
- *
- * Parameters:
- * - BROWSER: Browser selection (chrome, firefox, edge)
- * - ENVIRONMENT: Target environment (dev, staging, production)
- * - HEADLESS: Headless mode execution flag
- * - THREAD_COUNT: Number of parallel threads for test execution
- */
