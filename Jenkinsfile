@@ -72,11 +72,20 @@ pipeline {
                     if not exist "${env.REPORTS_DIR}" mkdir "${env.REPORTS_DIR}"
                     if not exist "${env.LOGS_DIR}" mkdir "${env.LOGS_DIR}"
                     if not exist "${env.SCREENSHOTS_DIR}" mkdir "${env.SCREENSHOTS_DIR}"
-                    mvn test ^
+                    REM Use clean test so artifacts are fresh and updated config files are picked up
+                    mvn clean test ^
                         -Dbrowser=${params.BROWSER} ^
                         -Denvironment=${params.ENVIRONMENT} ^
                         -Dheadless=${params.HEADLESS} ^
                         -DthreadCount=${params.THREAD_COUNT}
+
+                    REM Generate per-test HTML reports from surefire junit XMLs (requires Python on agent)
+                    if exist target\surefire-reports\junitreports (
+                        if not exist "reports\\per_test" mkdir "reports\\per_test"
+                        for %%f in (target\surefire-reports\junitreports\*.xml) do (
+                            python "scripts\\generate_per_test_reports.py" -i "%%f" -o "reports\\per_test"
+                        )
+                    )
                 """
             }
         }
