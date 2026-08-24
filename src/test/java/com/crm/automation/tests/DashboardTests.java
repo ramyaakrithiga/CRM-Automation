@@ -36,7 +36,7 @@ public class DashboardTests extends BaseTest {
     }
 
     /**
-     * Test 1: Verify Dashboard Page Loads
+     * Test 1: Verify Dashboard Page Loads or not
      */
     @Test(priority = 1, description = "Verify dashboard page loads after login")
     public void testDashboardPageLoads() {
