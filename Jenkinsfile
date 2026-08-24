@@ -116,21 +116,28 @@ pipeline {
         stage('Execute Postman Tests') {
             steps {
                 echo "====== Running Postman API Collection via Newman ======"
-                bat """
-                    if not exist "${env.REPORTS_DIR}" mkdir "${env.REPORTS_DIR}"
-                    
-                    REM Ensure Newman and HTML reporter are installed globally
-                    where newman || call npm install -g newman newman-reporter-htmlextra
+                bat '''
+                    @echo off
+                    if not exist "%REPORTS_DIR%" mkdir "%REPORTS_DIR%"
 
-                    REM Loop through all JSON collection files inside tests/postman
-                    for %%f in (${env.POSTMAN_DIR}\\*.json) do (
-                        echo Running Postman Collection: %%f
-                        call newman run "%%f" ^
-                            --reporters cli,junit,htmlextra ^
-                            --reporter-junit-export "${env.REPORTS_DIR}\\newman-report-%%~nf.xml" ^
-                            --reporter-htmlextra-export "${env.REPORTS_DIR}\\newman-report-%%~nf.html" || exit /b 0
+                    REM Add global npm path dynamically to environment PATH for this session
+                    set "PATH=%APPDATA%\\npm;%ProgramFiles%\\nodejs;%PATH%"
+
+                    REM Verify Postman folder exists
+                    if not exist "%POSTMAN_DIR%" (
+                        echo ERROR: Directory %POSTMAN_DIR% does not exist in repository!
+                        exit /b 0
                     )
-                """
+
+                    REM Execute all postman collections found in tests/postman using npx
+                    for %%f in ("%POSTMAN_DIR%\\*.json") do (
+                        echo Executing Postman Collection: %%f
+                        call npx --yes newman run "%%f" ^
+                            --reporters cli,junit,htmlextra ^
+                            --reporter-junit-export "%REPORTS_DIR%\\newman-report-%%~nf.xml" ^
+                            --reporter-htmlextra-export "%REPORTS_DIR%\\newman-report-%%~nf.html"
+                    )
+                '''
             }
         }
     }
@@ -139,7 +146,7 @@ pipeline {
         always {
             echo "====== Publishing Reports & Archiving Artifacts ======"
 
-            // 1. Publish Extent / HTML Reports (includes Postman HTML extra reports)
+            // 1. Publish Extent / HTML Reports & Newman HTML extra reports
             publishHTML([
                 allowMissing: true,
                 alwaysLinkToLastBuild: true,
@@ -158,6 +165,7 @@ pipeline {
                 reportFiles: "**/*.html",
                 reportName: "Per-test Reports"
             ])
+
             // Debug: list per-test reports so console shows whether files exist
             bat '''
                 echo Listing per-test reports directory
@@ -168,7 +176,7 @@ pipeline {
                 )
             '''
 
-            // 2. Publish JUnit XML Results (Includes Surefire and Postman/Newman XML reports)
+            // 2. Publish JUnit XML Results (Includes Surefire and Newman XML reports)
             junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml, reports/newman-report-*.xml'
 
             // 3. Archive Test Artifacts (Reports, Logs, Screenshots, XMLs)

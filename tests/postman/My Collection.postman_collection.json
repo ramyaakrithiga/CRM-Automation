@@ -1,0 +1,210 @@
+{
+  "info": {
+    "_postman_id": "3d5d5b2f-7925-4647-b554-2bb6a14f017e",
+    "name": "My Collection",
+    "description": "### Welcome to Postman! This is your first collection. \n\nCollections are your starting point for building and testing APIs. You can use this one to:\n\n• Group related requests\n• Test your API in real-world scenarios\n• Document and share your requests\n\nUpdate the name and overview whenever you’re ready to make it yours.\n\n[Learn more about Postman Collections.](https://learning.postman.com/docs/collections/collections-overview/)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "54430892",
+    "_collection_link": "https://go.postman.co/collection/54430892-3d5d5b2f-7925-4647-b554-2bb6a14f017e?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "CRM ",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// 1. Validate HTTP Status Code\r",
+              "pm.test(\"Status code is 200 OK\", function () {\r",
+              "    pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "// 2. Validate User Profile Fields\r",
+              "pm.test(\"Response contains correct user details\", function () {\r",
+              "    const responseData = pm.response.json();\r",
+              "    \r",
+              "    // Assert username, role, and active status\r",
+              "    pm.expect(responseData.username).to.eql(\"demo\");\r",
+              "    pm.expect(responseData.role).to.eql(\"super-admin\");\r",
+              "    pm.expect(responseData.status).to.eql(\"true\");\r",
+              "    pm.expect(responseData.id).to.eql(1);\r",
+              "});\r",
+              "\r",
+              "// 3. Verify and Save Auth Token for Next Requests\r",
+              "pm.test(\"JWT Token exists and is saved to collection variable\", function () {\r",
+              "    const responseData = pm.response.json();\r",
+              "    \r",
+              "    // Verify token exists and is a non-empty string\r",
+              "    pm.expect(responseData.token).to.be.a(\"string\").that.is.not.empty;\r",
+              "    \r",
+              "    // Save token automatically for subsequent API requests\r",
+              "    pm.collectionVariables.set(\"authToken\", responseData.token);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"username\": \"demo\",\r\n  \"password\": \"5555\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://api.crm.osllc.us/user/login",
+          "protocol": "https",
+          "host": [
+            "api",
+            "crm",
+            "osllc",
+            "us"
+          ],
+          "path": [
+            "user",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "CRM  Invalid",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// 1. Verify that login fails with 401 Unauthorized (or 400 depending on API design)\r",
+              "pm.test(\"Status code is 401 Unauthorized or 400 Bad Request\", function () {\r",
+              "    pm.expect(pm.response.code).to.be.oneOf([700, 400]);\r",
+              "});\r",
+              "\r",
+              "// 2. Ensure NO authentication token is returned in the response\r",
+              "pm.test(\"Response does not contain a valid JWT token\", function () {\r",
+              "    const responseData = pm.response.json();\r",
+              "    pm.expect(responseData.token).to.be.undefined;\r",
+              "});\r",
+              "\r",
+              "// 3. Verify an appropriate error message is returned\r",
+              "pm.test(\"Response contains error message\", function () {\r",
+              "    const responseData = pm.response.json();\r",
+              "    // Adjust key name (message/error/detail) based on what the API returns\r",
+              "    const errorMessage = responseData.message || responseData.error || responseData.detail;\r",
+              "    \r",
+              "    pm.expect(errorMessage).to.be.a(\"string\").that.is.not.empty;\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"username\": \"demo\",\r\n  \"password\": \"7777\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://api.crm.osllc.us/user/login",
+          "protocol": "https",
+          "host": [
+            "api",
+            "crm",
+            "osllc",
+            "us"
+          ],
+          "path": [
+            "user",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "https://6f5b-2406-7400-9a-e408-8dbb-119f-8fd8-66a2.ngrok-free.app",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://6f5b-2406-7400-9a-e408-8dbb-119f-8fd8-66a2.ngrok-free.app",
+          "protocol": "https",
+          "host": [
+            "6f5b-2406-7400-9a-e408-8dbb-119f-8fd8-66a2",
+            "ngrok-free",
+            "app"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url ",
+      "value": ""
+    },
+    {
+      "key": "user_role",
+      "value": ""
+    },
+    {
+      "key": "authToken",
+      "value": ""
+    }
+  ]
+}
