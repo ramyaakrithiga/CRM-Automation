@@ -1,6 +1,6 @@
 /**
  * Jenkins Pipeline for CRM Automation Testing
- * Formatted specifically for Windows Jenkins Node (using batch commands)
+ * Formatted specifically for Windows Jenkins Node  (using batch commands)
  */
 
 pipeline {
@@ -184,24 +184,16 @@ pipeline {
                              allowEmptyArchive: true, 
                              onlyIfSuccessful: false
 
-            // 4. Send Email Notifications (Optional)
+            // 4. Send Webhook Data to n8n via Windows Batch Curl
             script {
                 def buildStatus = currentBuild.result ?: 'SUCCESS'
-                def buildMessage = """
-                    Build Name: ${env.BUILD_NAME}
-                    Status: ${buildStatus}
-                    Duration: ${currentBuild.durationString}
-                    Browser: ${params.BROWSER}
-                    Environment: ${params.ENVIRONMENT}
-                    Jenkins URL: ${env.BUILD_URL}
+                
+                bat """
+                    curl -X POST ^
+                    -H "Content-Type: application/json" ^
+                    -d "{\\\"build_name\\\": \\"${env.BUILD_NAME}\\\", \\\"status\\\": \\"${buildStatus}\\\", \\\"duration\\\": \\"${currentBuild.durationString}\\\", \\\"browser\\\": \\"${params.BROWSER}\\\", \\\"environment\\\": \\"${params.ENVIRONMENT}\\\", \\\"jenkins_url\\\": \\"${env.BUILD_URL}\\\"}" ^
+                    https://enigmatic-marxism-spearfish.ngrok-free.dev/webhook/jenkins-report
                 """
-
-                emailext(
-                    to: '${DEFAULT_RECIPIENTS}',
-                    subject: "Jenkins Build ${env.BUILD_NAME} - ${buildStatus}",
-                    body: buildMessage,
-                    attachmentsPattern: "${env.REPORTS_DIR}/*.html"
-                )
             }
         }
 
