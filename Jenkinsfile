@@ -13,10 +13,11 @@ pipeline {
         stage('Build & Execute Tests') {
             steps {
                 echo '====== Executing Tests ======'
-                // Example for Maven (Uncomment if using Maven):
-                // bat 'mvn test'
                 
-                // Example for Node/npm (Uncomment if using npm):
+                // For Java / Maven projects:
+                bat 'mvn clean test'
+                
+                // For Node.js / Newman API test projects (uncomment if using npm):
                 // bat 'npm test'
             }
         }
