@@ -22,7 +22,7 @@ import com.crm.automation.utilities.CommonUtils;
 import com.crm.automation.utilities.DriverManager;
 
 /**
- * Login Test Cases for CRM webpage
+ * Login Test Cases for CRM webpages
  */
 public class LoginTests extends BaseTest {
     private static final Logger logger = LogManager.getLogger(LoginTests.class);
