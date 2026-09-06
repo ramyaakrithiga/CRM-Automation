@@ -2,17 +2,22 @@ pipeline {
     agent any
 
     environment {
-        // Define fallback values if these are not set as Jenkins job parameters
+        // Define default project variables
         BUILD_NAME = 'CRM Automation Pipeline'
         BROWSER = 'Chrome'
         ENVIRONMENT = 'QA'
+        REPORTS_DIR = 'reports'
     }
 
     stages {
         stage('Build & Execute Tests') {
             steps {
                 echo '====== Executing Tests ======'
-                // Add your test execution command here (e.g., mvn test or npm test)
+                // Example for Maven (Uncomment if using Maven):
+                // bat 'mvn test'
+                
+                // Example for Node/npm (Uncomment if using npm):
+                // bat 'npm test'
             }
         }
     }
@@ -63,14 +68,16 @@ pipeline {
             script {
                 def buildStatus = currentBuild.result ?: 'SUCCESS'
                 
-                // Using double quotes allows Jenkins Groovy interpolation for buildStatus
-                bat """
+                // Set status in env so single-quoted batch script reads it cleanly
+                env.JOB_BUILD_STATUS = buildStatus
+                
+                bat '''
                     curl -X POST ^
                     -H "Content-Type: application/json" ^
                     -H "Bypass-Tunnel-Remainder: true" ^
-                    -d "{\\"build_name\\":\\"%BUILD_NAME%\\", \\"status\\":\\"${buildStatus}\\", \\"browser\\":\\"%BROWSER%\\", \\"environment\\":\\"%ENVIRONMENT%\\", \\"jenkins_url\\":\\"%BUILD_URL%\\"}" ^
+                    -d "{\\"build_name\\":\\"%BUILD_NAME%\\", \\"status\\":\\"%JOB_BUILD_STATUS%\\", \\"browser\\":\\"%BROWSER%\\", \\"environment\\":\\"%ENVIRONMENT%\\", \\"jenkins_url\\":\\"%BUILD_URL%\\"}" ^
                     https://tender-zebras-lose.loca.lt/webhook/jenkins-report
-                """
+                '''
             }
         }
 
