@@ -1,19 +1,20 @@
 pipeline {
     agent any
 
-    tools {
-        maven 'Maven 3.8.8' // Ensure this matches your configured Maven tool name in Jenkins
+    environment {
+        // Define default project variables
+        BUILD_NAME = 'CRM Automation Pipeline'
+        BROWSER = 'Chrome'
+        ENVIRONMENT = 'QA'
+        REPORTS_DIR = 'reports'
     }
 
     stages {
-        stage('Checkout') {
+        stage('Build & Execute Tests') {
             steps {
-                checkout scm
-            }
-        }
-
-        stage('Build & Test') {
-            steps {
+                echo '====== Executing Tests ======'
+                
+                // Execute Java / Maven test suite
                 bat 'mvn clean test'
             }
         }
@@ -21,19 +22,39 @@ pipeline {
 
     post {
         always {
+            echo "====== Publishing Reports & Archiving Artifacts ======"
+
+            // 1. Publish Extent / HTML Reports
+            publishHTML([
+                allowMissing: true,
+                alwaysLinkToLastBuild: true,
+                keepAll: true,
+                reportDir: "${env.REPORTS_DIR}",
+                reportFiles: "*.html",
+                reportName: "Extent Reports"
+            ])
+
+            // 2. Publish JUnit XML Results (Surefire test reports)
+            junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
+
+            // 3. Archive Test Artifacts (Reports, Logs, Screenshots, XMLs)
+            archiveArtifacts artifacts: 'reports/**/*.html, reports/**/*.xml, logs/**/*.log, screenshots/**/*.png', 
+                             allowEmptyArchive: true, 
+                             onlyIfSuccessful: false
+
+            // 4. Send Extent Report HTML + Build Metadata to local n8n
             script {
-                // 1. Define the relative path to your Extent HTML Report
-                def reportPath = "Extent_Reports/TestReport_*.html" 
+                def buildStatus = currentBuild.result ?: 'SUCCESS'
                 
-                // Search for the generated report file dynamically
-                def reportFile = findFiles(glob: '**/Extent_Reports/*.html')
+                // Search for generated Extent HTML report inside your reports folder
+                def reportFiles = findFiles(glob: "${env.REPORTS_DIR}/*.html")
                 def reportHtml = ""
 
-                if (reportFile.length > 0) {
-                    echo "Found Extent Report: ${reportFile[0].path}"
-                    reportHtml = readFile(file: reportFile[0].path)
+                if (reportFiles.length > 0) {
+                    echo "Found Extent Report: ${reportFiles[0].path}"
+                    reportHtml = readFile(file: reportFiles[0].path)
                     
-                    // Escape special characters to prevent cURL JSON payload corruption
+                    // Escape special JSON / HTML characters safely
                     reportHtml = reportHtml
                         .replace('\\', '\\\\')
                         .replace('"', '\\"')
@@ -41,26 +62,31 @@ pipeline {
                         .replace('\n', '\\n')
                         .replace('\t', '\\t')
                 } else {
-                    echo "Extent Report file not found!"
-                    reportHtml = "<h2>Extent Report file was not found on the agent.</h2>"
+                    echo "Extent Report file not found inside ${env.REPORTS_DIR} directory!"
+                    reportHtml = "<h2>Extent Report file was not found in ${env.REPORTS_DIR}.</h2>"
                 }
 
-                // Construct JSON payload
+                // Build complete JSON payload containing full Extent Report HTML content
                 def payload = """{
-                    "build_name": "${env.JOB_NAME}",
-                    "status": "${currentBuild.currentResult}",
-                    "browser": "Chrome",
-                    "environment": "QA",
+                    "build_name": "${env.BUILD_NAME}",
+                    "status": "${buildStatus}",
+                    "browser": "${env.BROWSER}",
+                    "environment": "${env.ENVIRONMENT}",
                     "jenkins_url": "${env.BUILD_URL}",
                     "report_html": "${reportHtml}"
                 }"""
 
-                // Write payload to a temporary file to prevent Windows BAT command-line length limits
+                // Write payload to payload.json to handle large HTML payloads without Windows command length limits
                 writeFile file: 'payload.json', text: payload, encoding: 'UTF-8'
 
-                // Send POST request to n8n webhook
+                // Post the JSON payload file directly to your n8n production webhook
                 bat 'curl -X POST http://localhost:5678/webhook/jenkins-report -H "Content-Type: application/json" -d @payload.json'
             }
+        }
+
+        cleanup {
+            echo "====== Cleaning Workspace ======"
+            deleteDir()
         }
     }
 }
