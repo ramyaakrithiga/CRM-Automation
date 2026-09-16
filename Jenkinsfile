@@ -41,7 +41,7 @@ pipeline {
                              allowEmptyArchive: true, 
                              onlyIfSuccessful: false
 
-            // 4. Send Extent Report HTML + Metadata to local n8n
+            // 4. Send Extent Report HTML + Metadata to n8n via LocalTunnel
             script {
                 // Read current build result; default to SUCCESS if null
                 def buildStatus = currentBuild.currentResult ?: 'SUCCESS'
@@ -73,14 +73,13 @@ pipeline {
                 // Save formatted JSON to file
                 writeFile file: 'payload.json', text: payloadJson, encoding: 'UTF-8'
 
-                // Send request to n8n webhook
-                bat 'curl -X POST http://localhost:5678/webhook/jenkins-report -H "Content-Type: application/json" -d @payload.json'
+                // Send request to n8n webhook via LocalTunnel public endpoint
+                bat 'curl -X POST https://proud-books-rest.loca.lt/webhook/jenkins-report -H "Content-Type: application/json" -d @payload.json'
             }
         }
 
         cleanup {
             echo "====== Cleaning Up Temporary Payload ======"
-            // Safely delete temporary JSON payload, keep workspace intact if needed
             echo "Cleanup complete."
         }
     }
