@@ -12,16 +12,19 @@ pipeline {
         stage('Execute API Tests') {
             steps {
                 echo '====== Executing Postman API Tests ======'
-                // Run Newman Postman collection and allow execution to continue even if assertions fail
-                bat 'newman run "tests/postman/My Collection.postman_collection.json" -r htmlextra --reporter-htmlextra-export reports/api_report.html || exit 0'
+                // Ensure reports directory exists before running Newman
+                bat 'if not exist reports mkdir reports'
+                
+                // Run Newman Postman collection using npx to ensure binary path resolution
+                bat 'npx newman run "tests/postman/My Collection.postman_collection.json" -r htmlextra --reporter-htmlextra-export reports/api_report.html || exit 0'
             }
         }
 
         stage('Build & Execute UI Tests') {
             steps {
                 echo '====== Executing UI Tests ======'
-                // Allow pipeline to continue to post block even if UI tests fail
-                bat 'mvn clean test'
+                // Run 'mvn test' instead of 'mvn clean test' to prevent deleting the generated api_report.html
+                bat 'mvn test'
             }
         }
     }
