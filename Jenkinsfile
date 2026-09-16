@@ -9,11 +9,18 @@ pipeline {
     }
 
     stages {
-        stage('Build & Execute Tests') {
+        stage('Execute API Tests') {
             steps {
-                echo '====== Executing Tests ======'
-                
-                // Allow pipeline to continue to post block even if tests fail
+                echo '====== Executing Postman API Tests ======'
+                // Run Newman Postman collection and allow pipeline execution to continue even if assertions fail
+                bat 'newman run "tests/postman/My Collection.postman_collection.json" -r htmlextra --reporter-htmlextra-export reports/api_report.html || exit 0'
+            }
+        }
+
+        stage('Build & Execute UI Tests') {
+            steps {
+                echo '====== Executing UI Tests ======'
+                // Allow pipeline to continue to post block even if UI tests fail
                 bat 'mvn clean test'
             }
         }
@@ -23,14 +30,14 @@ pipeline {
         always {
             echo "====== Publishing Reports & Archiving Artifacts ======"
 
-            // 1. Publish Extent / HTML Reports
+            // 1. Publish Extent & API HTML Reports
             publishHTML([
                 allowMissing: true,
                 alwaysLinkToLastBuild: true,
                 keepAll: true,
                 reportDir: "${env.REPORTS_DIR}",
                 reportFiles: "*.html",
-                reportName: "Extent Reports"
+                reportName: "Extent & API Reports"
             ])
 
             // 2. Publish JUnit XML Results
@@ -46,7 +53,7 @@ pipeline {
                 // Read current build result; default to SUCCESS if null
                 def buildStatus = currentBuild.currentResult ?: 'SUCCESS'
                 
-                // Find report file
+                // Find Extent report file
                 def reportFiles = findFiles(glob: "${env.REPORTS_DIR}/*.html")
                 def reportHtml = ""
 
@@ -58,7 +65,7 @@ pipeline {
                     reportHtml = "<h2>Extent Report file was not found in ${env.REPORTS_DIR}.</h2>"
                 }
 
-                // Safely convert payload to JSON using Groovy JsonOutput to avoid escaping errors
+                // Safely convert payload to JSON using Groovy JsonOutput
                 def payloadMap = [
                     build_name : env.BUILD_NAME,
                     status     : buildStatus,
@@ -80,7 +87,6 @@ pipeline {
 
         cleanup {
             echo "====== Cleaning Up Temporary Payload ======"
-            // Safely delete temporary JSON payload, keep workspace intact if needed
             echo "Cleanup complete."
         }
     }
