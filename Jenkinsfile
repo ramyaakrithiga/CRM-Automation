@@ -12,7 +12,7 @@ pipeline {
         stage('Execute API Tests') {
             steps {
                 echo '====== Executing Postman API Tests ======'
-                // Run Newman Postman collection and allow pipeline execution to continue even if assertions fail
+                // Run Newman Postman collection and allow execution to continue even if assertions fail
                 bat 'newman run "tests/postman/My Collection.postman_collection.json" -r htmlextra --reporter-htmlextra-export reports/api_report.html || exit 0'
             }
         }
@@ -48,22 +48,45 @@ pipeline {
                              allowEmptyArchive: true, 
                              onlyIfSuccessful: false
 
-            // 4. Send Extent Report HTML + Metadata to local n8n
+            // 4. Send Extent & API Reports + Metadata to local n8n
             script {
-                // Read current build result; default to SUCCESS if null
                 def buildStatus = currentBuild.currentResult ?: 'SUCCESS'
                 
-                // Find Extent report file
-                def reportFiles = findFiles(glob: "${env.REPORTS_DIR}/*.html")
-                def reportHtml = ""
+                // Read UI Extent Report (filtering out api_report.html)
+                def uiReportFiles = findFiles(glob: "${env.REPORTS_DIR}/*.html")
+                def uiHtml = ""
 
-                if (reportFiles.length > 0) {
-                    echo "Found Extent Report: ${reportFiles[0].path}"
-                    reportHtml = readFile(file: reportFiles[0].path)
-                } else {
-                    echo "Extent Report file not found inside ${env.REPORTS_DIR} directory!"
-                    reportHtml = "<h2>Extent Report file was not found in ${env.REPORTS_DIR}.</h2>"
+                for (file in uiReportFiles) {
+                    if (!file.name.contains('api_report.html')) {
+                        echo "Found Extent Report: ${file.path}"
+                        uiHtml = readFile(file: file.path)
+                        break
+                    }
                 }
+
+                if (uiHtml == "") {
+                    echo "Extent Report file not found inside ${env.REPORTS_DIR} directory!"
+                    uiHtml = "<h3>UI Extent Report file was not found.</h3>"
+                }
+
+                // Read Postman API Report
+                def apiHtml = ""
+                if (fileExists("${env.REPORTS_DIR}/api_report.html")) {
+                    echo "Found API Report: ${env.REPORTS_DIR}/api_report.html"
+                    apiHtml = readFile(file: "${env.REPORTS_DIR}/api_report.html")
+                } else {
+                    echo "API Report file not found inside ${env.REPORTS_DIR} directory!"
+                    apiHtml = "<h3>Postman API Report file was not found.</h3>"
+                }
+
+                // Combine both HTML reports into a single string payload
+                def combinedHtml = """
+                    <h2 style="color:#2c3e50; border-bottom: 2px solid #2c3e50;">--- UI Extent Test Report ---</h2>
+                    ${uiHtml}
+                    <br/><hr/><br/>
+                    <h2 style="color:#2c3e50; border-bottom: 2px solid #2c3e50;">--- Postman API Test Report ---</h2>
+                    ${apiHtml}
+                """
 
                 // Safely convert payload to JSON using Groovy JsonOutput
                 def payloadMap = [
@@ -72,7 +95,7 @@ pipeline {
                     browser    : env.BROWSER,
                     environment: env.ENVIRONMENT,
                     jenkins_url: env.BUILD_URL,
-                    report_html: reportHtml
+                    report_html: combinedHtml
                 ]
                 
                 def payloadJson = groovy.json.JsonOutput.toJson(payloadMap)
