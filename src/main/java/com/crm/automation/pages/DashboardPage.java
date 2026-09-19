@@ -30,7 +30,7 @@ public class DashboardPage extends BasePage {
     }
 
     /**
-     * Check if dashboard page is loaded
+     * Check if dashboard page is 
      *
      * @return True if dashboard is loaded
      */
