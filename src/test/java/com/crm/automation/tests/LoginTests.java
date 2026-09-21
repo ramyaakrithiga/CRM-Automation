@@ -89,7 +89,7 @@ public class LoginTests extends BaseTest {
     }
 
     /**
-     * Test 2: Successful Login
+     * Test 2: Successfull Login with Valid Credentials
      */
     @Test(priority = 2, description = "Test successful login with valid credentials")
     public void testSuccessfulLogin() {
