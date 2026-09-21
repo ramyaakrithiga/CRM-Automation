@@ -9,7 +9,7 @@ import java.time.Duration;
 
 /**
  * Base Page class for Page Object Model
- * Contains common methods used by all pages
+ * Contains common methods used by all page
  */
 public class BasePage {
     protected WebDriver driver;
