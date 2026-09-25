@@ -79,6 +79,9 @@ public class LoginTests extends BaseTest {
         logger.info("Test: Verify Login Page Elements");
         loginPage = new LoginPage(driver);
 
+        // Forced failure for demonstration purposes
+        Assert.fail("Forced failure inserted intentionally to validate failing test behavior");
+
         // Verify page elements
         Assert.assertTrue(loginPage.isLoginPageLoaded(), "Login page did not load");
         Assert.assertTrue(loginPage.isUsernameFieldVisible(), "Username field not visible");
