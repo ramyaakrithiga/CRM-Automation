@@ -51,9 +51,13 @@ pipeline {
                              allowEmptyArchive: true, 
                              onlyIfSuccessful: false
 
-            // 4. Send Extent & API Reports + Metadata to local n8n
+            // 4. Send Extent & API Reports + Metadata to n8n
             script {
-                def buildStatus = currentBuild.currentResult ?: 'SUCCESS'
+                // Ensure buildStatus accurately captures UNSTABLE or FAILURE states
+                def buildStatus = currentBuild.result ?: currentBuild.currentResult
+                if (buildStatus == null || buildStatus == 'SUCCESS') {
+                    buildStatus = 'SUCCESS'
+                }
                 
                 // Read UI Extent Report (filtering out api_report.html)
                 def uiReportFiles = findFiles(glob: "${env.REPORTS_DIR}/*.html")
@@ -113,6 +117,11 @@ pipeline {
 
         cleanup {
             echo "====== Cleaning Up Temporary Payload ======"
+            script {
+                if (fileExists('payload.json')) {
+                    bat 'del payload.json'
+                }
+            }
             echo "Cleanup complete."
         }
     }
