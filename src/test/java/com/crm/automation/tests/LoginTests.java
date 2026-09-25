@@ -72,7 +72,7 @@ public class LoginTests extends BaseTest {
     }
 
     /**
-     * Test 1: Verify Login Page Elements
+     * Test 1: Verify Login Page Element
      */
     @Test(priority = 1, description = "Verify login page elements are displayed")
     public void testLoginPageElements() {
