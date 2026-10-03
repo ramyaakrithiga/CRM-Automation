@@ -51,7 +51,7 @@ pipeline {
                              allowEmptyArchive: true, 
                              onlyIfSuccessful: false
 
-            // 4. Send Extent & API Reports + Metadata to n8n
+            // 4. Extract Failure Logs & Send Reports + Metadata to n8n
             script {
                 // Ensure buildStatus accurately captures UNSTABLE or FAILURE states
                 def buildStatus = currentBuild.result ?: currentBuild.currentResult
@@ -59,6 +59,37 @@ pipeline {
                     buildStatus = 'SUCCESS'
                 }
                 
+                // Extract Failure Logs from Surefire XML Reports
+                def failureDetails = ""
+                def xmlFiles = findFiles(glob: '**/target/surefire-reports/*.xml')
+
+                for (file in xmlFiles) {
+                    try {
+                        def xmlContent = readFile(file: file.path)
+                        def xmlData = new XmlParser().parseText(xmlContent)
+
+                        xmlData.testcase.each { tc ->
+                            if (tc.failure || tc.error) {
+                                String tcName = tc.'@name' ?: 'Unknown Test'
+                                String className = tc.'@classname' ?: 'Unknown Class'
+                                String message = tc.failure ? tc.failure[0].'@message' : tc.error[0].'@message'
+                                String stackTrace = tc.failure ? tc.failure[0].text() : tc.error[0].text()
+
+                                failureDetails += "Test Method: ${className}.${tcName}\n"
+                                if (message) failureDetails += "Error Message: ${message}\n"
+                                if (stackTrace) failureDetails += "Stacktrace Snippet:\n${stackTrace.take(300)}...\n"
+                                failureDetails += "----------------------------------------\n"
+                            }
+                        }
+                    } catch (Exception e) {
+                        echo "Failed to parse Surefire XML file (${file.path}): ${e.message}"
+                    }
+                }
+
+                if (failureDetails == "") {
+                    failureDetails = "No specific assertion failure or exception found in surefire-reports."
+                }
+
                 // Read UI Extent Report (filtering out api_report.html)
                 def uiReportFiles = findFiles(glob: "${env.REPORTS_DIR}/*.html")
                 def uiHtml = ""
@@ -97,12 +128,13 @@ pipeline {
 
                 // Safely convert payload to JSON using Groovy JsonOutput
                 def payloadMap = [
-                    build_name : env.BUILD_NAME,
-                    status     : buildStatus,
-                    browser    : env.BROWSER,
-                    environment: env.ENVIRONMENT,
-                    jenkins_url: env.BUILD_URL,
-                    report_html: combinedHtml
+                    build_name          : env.BUILD_NAME,
+                    status              : buildStatus,
+                    browser             : env.BROWSER,
+                    environment         : env.ENVIRONMENT,
+                    jenkins_url         : env.BUILD_URL,
+                    failed_test_details : failureDetails,
+                    report_html         : combinedHtml
                 ]
                 
                 def payloadJson = groovy.json.JsonOutput.toJson(payloadMap)
