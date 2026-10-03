@@ -23,8 +23,8 @@ pipeline {
         stage('Build & Execute UI Tests') {
             steps {
                 echo '====== Executing UI Tests ======'
-                // Run 'mvn test' instead of 'mvn clean test' to prevent deleting the generated api_report.html
-                bat 'mvn test'
+                // Run 'mvn test' without crashing pipeline immediately on test failure, allowing post block to execute
+                bat 'mvn test || exit 0'
             }
         }
     }
@@ -53,14 +53,9 @@ pipeline {
 
             // 4. Extract Failure Logs & Send Reports + Metadata to n8n
             script {
-                // Ensure buildStatus accurately captures UNSTABLE or FAILURE states
-                def buildStatus = currentBuild.result ?: currentBuild.currentResult
-                if (buildStatus == null || buildStatus == 'SUCCESS') {
-                    buildStatus = 'SUCCESS'
-                }
-                
                 // Extract Failure Logs from Surefire XML Reports
                 def failureDetails = ""
+                def hasFailures = false
                 def xmlFiles = findFiles(glob: '**/target/surefire-reports/*.xml')
 
                 for (file in xmlFiles) {
@@ -70,6 +65,7 @@ pipeline {
 
                         xmlData.testcase.each { tc ->
                             if (tc.failure || tc.error) {
+                                hasFailures = true
                                 String tcName = tc.'@name' ?: 'Unknown Test'
                                 String className = tc.'@classname' ?: 'Unknown Class'
                                 String message = tc.failure ? tc.failure[0].'@message' : tc.error[0].'@message'
@@ -77,7 +73,7 @@ pipeline {
 
                                 failureDetails += "Test Method: ${className}.${tcName}\n"
                                 if (message) failureDetails += "Error Message: ${message}\n"
-                                if (stackTrace) failureDetails += "Stacktrace Snippet:\n${stackTrace.take(300)}...\n"
+                                if (stackTrace) failureDetails += "Stacktrace Snippet:\n${stackTrace.take(500)}...\n"
                                 failureDetails += "----------------------------------------\n"
                             }
                         }
@@ -85,6 +81,13 @@ pipeline {
                         echo "Failed to parse Surefire XML file (${file.path}): ${e.message}"
                     }
                 }
+
+                // Dynamically assign build status if failures were detected
+                if (hasFailures) {
+                    currentBuild.result = 'UNSTABLE'
+                }
+
+                def buildStatus = currentBuild.result ?: currentBuild.currentResult ?: 'SUCCESS'
 
                 if (failureDetails == "") {
                     failureDetails = "No specific assertion failure or exception found in surefire-reports."
