@@ -53,7 +53,7 @@ pipeline {
 
             // 4. Extract Failure Logs & Send Reports + Metadata to n8n
             script {
-                // Extract Failure Logs from Surefire XML Reports
+                // Extract Failure Logs from Surefire XML Reports safely using XmlSlurper
                 def failureDetails = ""
                 def hasFailures = false
                 def xmlFiles = findFiles(glob: '**/target/surefire-reports/*.xml')
@@ -61,15 +61,15 @@ pipeline {
                 for (file in xmlFiles) {
                     try {
                         def xmlContent = readFile(file: file.path)
-                        def xmlData = new XmlParser().parseText(xmlContent)
+                        def xmlData = new XmlSlurper().parseText(xmlContent)
 
                         xmlData.testcase.each { tc ->
-                            if (tc.failure || tc.error) {
+                            if (tc.failure.size() > 0 || tc.error.size() > 0) {
                                 hasFailures = true
-                                String tcName = tc.'@name' ?: 'Unknown Test'
-                                String className = tc.'@classname' ?: 'Unknown Class'
-                                String message = tc.failure ? tc.failure[0].'@message' : tc.error[0].'@message'
-                                String stackTrace = tc.failure ? tc.failure[0].text() : tc.error[0].text()
+                                String tcName = tc.'@name'?.text() ?: 'Unknown Test'
+                                String className = tc.'@classname'?.text() ?: 'Unknown Class'
+                                String message = tc.failure.size() > 0 ? tc.failure[0].'@message'?.text() : tc.error[0].'@message'?.text()
+                                String stackTrace = tc.failure.size() > 0 ? tc.failure[0].text() : tc.error[0].text()
 
                                 failureDetails += "Test Method: ${className}.${tcName}\n"
                                 if (message) failureDetails += "Error Message: ${message}\n"
