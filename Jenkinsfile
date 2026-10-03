@@ -23,8 +23,8 @@ pipeline {
         stage('Build & Execute UI Tests') {
             steps {
                 echo '====== Executing UI Tests ======'
-                // Run 'mvn test' without crashing pipeline immediately on test failure, allowing post block to execute
-                bat 'mvn test || exit 0'
+                // Run 'mvn test' instead of 'mvn clean test' to prevent deleting the generated api_report.html
+                bat 'mvn test'
             }
         }
     }
@@ -53,27 +53,31 @@ pipeline {
 
             // 4. Extract Failure Logs & Send Reports + Metadata to n8n
             script {
-                // Extract Failure Logs from Surefire XML Reports safely using XmlSlurper
+                // Ensure buildStatus accurately captures UNSTABLE or FAILURE states
+                def buildStatus = currentBuild.result ?: currentBuild.currentResult
+                if (buildStatus == null || buildStatus == 'SUCCESS') {
+                    buildStatus = 'SUCCESS'
+                }
+                
+                // Extract Failure Logs from Surefire XML Reports
                 def failureDetails = ""
-                def hasFailures = false
                 def xmlFiles = findFiles(glob: '**/target/surefire-reports/*.xml')
 
                 for (file in xmlFiles) {
                     try {
                         def xmlContent = readFile(file: file.path)
-                        def xmlData = new XmlSlurper().parseText(xmlContent)
+                        def xmlData = new XmlParser().parseText(xmlContent)
 
                         xmlData.testcase.each { tc ->
-                            if (tc.failure.size() > 0 || tc.error.size() > 0) {
-                                hasFailures = true
-                                String tcName = tc.'@name'?.text() ?: 'Unknown Test'
-                                String className = tc.'@classname'?.text() ?: 'Unknown Class'
-                                String message = tc.failure.size() > 0 ? tc.failure[0].'@message'?.text() : tc.error[0].'@message'?.text()
-                                String stackTrace = tc.failure.size() > 0 ? tc.failure[0].text() : tc.error[0].text()
+                            if (tc.failure || tc.error) {
+                                String tcName = tc.'@name' ?: 'Unknown Test'
+                                String className = tc.'@classname' ?: 'Unknown Class'
+                                String message = tc.failure ? tc.failure[0].'@message' : tc.error[0].'@message'
+                                String stackTrace = tc.failure ? tc.failure[0].text() : tc.error[0].text()
 
                                 failureDetails += "Test Method: ${className}.${tcName}\n"
                                 if (message) failureDetails += "Error Message: ${message}\n"
-                                if (stackTrace) failureDetails += "Stacktrace Snippet:\n${stackTrace.take(500)}...\n"
+                                if (stackTrace) failureDetails += "Stacktrace Snippet:\n${stackTrace.take(300)}...\n"
                                 failureDetails += "----------------------------------------\n"
                             }
                         }
@@ -81,13 +85,6 @@ pipeline {
                         echo "Failed to parse Surefire XML file (${file.path}): ${e.message}"
                     }
                 }
-
-                // Dynamically assign build status if failures were detected
-                if (hasFailures) {
-                    currentBuild.result = 'UNSTABLE'
-                }
-
-                def buildStatus = currentBuild.result ?: currentBuild.currentResult ?: 'SUCCESS'
 
                 if (failureDetails == "") {
                     failureDetails = "No specific assertion failure or exception found in surefire-reports."
