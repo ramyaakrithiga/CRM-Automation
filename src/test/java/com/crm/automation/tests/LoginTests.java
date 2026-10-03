@@ -72,7 +72,7 @@ public class LoginTests extends BaseTest {
     }
 
     /**
-     * Test 1: Verify Login Page Elements
+     * Test 1: Verify Login Page Element
      * 
      * 
      */
